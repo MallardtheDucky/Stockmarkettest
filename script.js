@@ -1,4 +1,4 @@
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbydUXzhPMaaDy9huPJXeE8zKPyeJkqgdUUks7_Ijm8Qc-nSit3gphw93wEpeP2V4tp8/exec'; // Replace with your Apps Script web app URL
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw1p2MEdU5mZiRRe-axBYB9_retcLu8f6vzbSX-pvq5TJ9n-NY6CTrWFiz57KCLmn2x/exec'; // Replace with your Apps Script web app URL
 
 async function loadStocks() {
   try {
