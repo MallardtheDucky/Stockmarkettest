@@ -1,4 +1,4 @@
-const APPS_SCRIPT_URL = 'YOUR_APPS_SCRIPT_WEB_APP_URL'; // Replace with your Apps Script web app URL
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbydUXzhPMaaDy9huPJXeE8zKPyeJkqgdUUks7_Ijm8Qc-nSit3gphw93wEpeP2V4tp8/exec'; // Replace with your Apps Script web app URL
 
 async function loadStocks() {
   try {
