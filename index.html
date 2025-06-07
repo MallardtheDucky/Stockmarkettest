@@ -1,0 +1,158 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html>
+<head>
+  <title>Mock Stock Market</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-6">
+  <div class="container mx-auto">
+    <h1 class="text-3xl font-bold mb-6">Mock Stock Market</h1>
+
+    <!-- Stock Table -->
+    <div class="mb-8">
+      <h2 class="text-2xl font-semibold mb-4">Available Stocks</h2>
+      <table id="stockTable" class="min-w-full bg-white shadow-md rounded">
+        <thead>
+          <tr class="bg-gray-200 text-gray-600 uppercase text-sm">
+            <th class="py-3 px-6">Company</th>
+            <th class="py-3 px-6">Ticker</th>
+            <th class="py-3 px-6">Sector</th>
+            <th class="py-3 px-6">Price</th>
+            <th class="py-3 px-6">Shares Available</th>
+            <th class="py-3 px-6">Market Cap</th>
+          </tr>
+        </thead>
+        <tbody id="stockBody"></tbody>
+      </table>
+    </div>
+
+    <!-- Transaction Form -->
+    <div class="mb-8">
+      <h2 class="text-2xl font-semibold mb-4">Trade Stocks</h2>
+      <div class="bg-white p-6 rounded shadow-md">
+        <div class="flex flex-col space-y-4">
+          <input id="username" type="text" placeholder="Username" class="border p-2 rounded">
+          <select id="ticker" class="border p-2 rounded">
+            <option value="">Select Ticker</option>
+          </select>
+          <select id="action" class="border p-2 rounded">
+            <option value="Buy">Buy</option>
+            <option value="Sell">Sell</option>
+          </select>
+          <input id="quantity" type="number" placeholder="Quantity" class="border p-2 rounded">
+          <button onclick="submitTrade()" class="bg-blue-500 text-white p-2 rounded hover:bg-blue-600">Submit Trade</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Portfolio -->
+    <div>
+      <h2 class="text-2xl font-semibold mb-4">Your Portfolio</h2>
+      <table id="portfolioTable" class="min-w-full bg-white shadow-md rounded">
+        <thead>
+          <tr class="bg-gray-200 text-gray-600 uppercase text-sm">
+            <th class="py-3 px-6">Ticker</th>
+            <th class="py-3 px-6">Shares Owned</th>
+            <th class="py-3 px-6">Average Price</th>
+          </tr>
+        </thead>
+        <tbody id="portfolioBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    function loadStocks() {
+      google.script.run.withSuccessHandler(displayStocks).getStockData();
+    }
+
+    function displayStocks(stocks) {
+      const stockBody = document.getElementById('stockBody');
+      const tickerSelect = document.getElementById('ticker');
+      stockBody.innerHTML = '';
+      tickerSelect.innerHTML = '<option value="">Select Ticker</option>';
+      
+      stocks.forEach(stock => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td class="py-3 px-6">${stock['Company Name']}</td>
+          <td class="py-3 px-6">${stock['Ticker']}</td>
+          <td class="py-3 px-6">${stock['Sector']}</td>
+          <td class="py-3 px-6">$${stock['Current Price'].toFixed(2)}</td>
+          <td class="py-3 px-6">${stock['Shares Available']}</td>
+          <td class="py-3 px-6">$${(stock['Market Cap']/1e6).toFixed(2)}M</td>
+        `;
+        stockBody.appendChild(row);
+
+        const option = document.createElement('option');
+        option.value = stock['Ticker'];
+        option.text = `${stock['Ticker']} - ${stock['Company Name']}`;
+        tickerSelect.appendChild(option);
+      });
+    }
+
+    function submitTrade() {
+      const user = document.getElementById('username').value;
+      const ticker = document.getElementById('ticker').value;
+      const action = document.getElementById('action').value;
+      const quantity = parseInt(document.getElementById('quantity').value);
+
+      if (!user || !ticker || !quantity || quantity <= 0) {
+        alert('Please fill all fields with valid values');
+        return;
+      }
+
+      google.script.run
+        .withSuccessHandler(result => {
+          alert(`Trade successful! ${action} ${quantity} shares of ${ticker} at $${result.price.toFixed(2)}`);
+          loadStocks();
+          // Optionally, update portfolio display here
+        })
+        .withFailureHandler(error => alert('Error: ' + error.message))
+        .processTransaction(user, ticker, action, quantity);
+    }
+
+    // Load stocks on page load
+    window.onload = loadStocks;
+  </script>
+</body>
+</html>
