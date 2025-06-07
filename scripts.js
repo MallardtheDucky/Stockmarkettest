@@ -1,5 +1,5 @@
 // Fetch stock data from Google Apps Script Web App
-const WEB_APP_URL = 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL'; // Replace with your deployed Web App URL
+const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwdhHp5FSM9F1-9ZKAZKQJXOnHNppiQ8MAwH8S5R82XotlCmlCUQbmO1SMtuqaX5uHG/exec'; // Replace with your deployed Web App URL
 
 async function fetchStocks() {
     try {
